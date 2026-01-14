@@ -14,6 +14,16 @@ export type LabelSplit = "none" | "vertical" | "horizontal";
 export type TailPosition = "right" | "bottom" | "left" | "top";
 export type MirrorType = "none" | "copy" | "flip";
 
+type _Range<T extends number, R extends unknown[]> =
+  R['length'] extends T ? R[number] : _Range<T, [R['length'], ...R]>;
+
+export type Range<T extends number> = number extends T ? number : _Range<T, []>;
+
+export const CsvParamsSchema = z.object({
+  data: z.string(),
+});
+
+
 /** Not validated */
 export const FabricObjectSchema = z.custom<fabric.FabricObject>((val: any): boolean => {
   return typeof val === "object";
@@ -27,6 +37,7 @@ export const LabelPropsSchema = z.object({
   }),
   shape: z.enum(["rect", "rounded_rect", "circle"]).default("rect").optional(),
   split: z.enum(["none", "vertical", "horizontal"]).default("none").optional(),
+  splitParts: z.number().min(1).default(2).optional(),
   tailPos: z.enum(["right", "bottom", "left", "top"]).default("right").optional(),
   tailLength: z.number().default(0).optional(),
   mirror: z.enum(["none", "copy", "flip"]).default("none").optional(),
@@ -41,6 +52,7 @@ export const LabelPresetSchema = z.object({
   title: z.string().optional(),
   shape: z.enum(["rect", "rounded_rect", "circle"]).default("rect").optional(),
   split: z.enum(["none", "vertical", "horizontal"]).default("none").optional(),
+  splitParts: z.number().min(1).default(2).optional(),
   tailPos: z.enum(["right", "bottom", "left", "top"]).default("right").optional(),
   tailLength: z.number().default(0).optional(),
   mirror: z.enum(["none", "copy", "flip"]).default("none").optional(),
@@ -57,6 +69,8 @@ export const ExportedLabelTemplateSchema = z.object({
   thumbnailBase64: z.string().optional(),
   title: z.string().optional(),
   timestamp: z.number().positive().optional(),
+  id: z.string().optional(), // filled with localStorage key, not exported
+  csv: CsvParamsSchema.optional(),
 });
 
 const [firstTask, ...otherTasks] = printTaskNames;
@@ -69,10 +83,11 @@ export const PreviewPropsOffsetSchema = z.object({
 
 export const PreviewPropsSchema = z.object({
   postProcess: z.enum(["threshold", "dither"]).optional(),
+  postProcessInvert: z.boolean().optional(),
   threshold: z.number().gte(1).lte(255).optional(),
   quantity: z.number().gte(1).optional(),
   density: z.number().gte(1).optional(),
-  labelType: z.nativeEnum(LabelType).optional(),
+  labelType: z.enum(LabelType).optional(),
   printTaskName: z.enum([firstTask, ...otherTasks]).optional(),
   offset: PreviewPropsOffsetSchema.optional(),
 });
@@ -91,6 +106,7 @@ export const AppConfigSchema = z.object({
   fitMode: z.enum(["stretch", "ratio_min", "ratio_max"]).optional(),
 });
 
+export type CsvParams = z.infer<typeof CsvParamsSchema>;
 export type LabelProps = z.infer<typeof LabelPropsSchema>;
 export type LabelPreset = z.infer<typeof LabelPresetSchema>;
 export type FabricJson = z.infer<typeof FabricJsonSchema>;
